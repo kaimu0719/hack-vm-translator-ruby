@@ -42,6 +42,39 @@ class CodeWriter
     end
   end
 
+  # label コマンド
+  def write_label(label)
+    emit <<~ASM
+      (#{scope_label(label)})
+    ASM
+  end
+
+  # if-goto コマンド
+  # @SP                     SPのアドレスを指定
+  # AM=M-1                  SPが指定しているアドレスを-1してAレジスタとメモリに格納する
+  # D=M                     SPから-1したアドレスのメモリの値をDレジスタに格納する
+  # @#{scope_label(label)}  指定されたラベルのアドレスを指定する
+  # D;JNE                   Dレジスタの値が0じゃない場合は上記で指定されたアドレスにジャンプする
+  def write_if(label)
+    emit <<~ASM
+      @SP
+      AM=M-1
+      D=M
+      @#{scope_label(label)}
+      D;JNE
+    ASM
+  end
+
+  # goto コマンド
+  # @#{scope_label(label)}  指定されたラベルのアドレスを指定する
+  # 上記の指定されたアドレスに無条件ジャンプ
+  def write_goto(label)
+    emit <<~ASM
+      @#{scope_label(label)}
+      0;JMP
+    ASM
+  end
+
   def close
     emit infinite_loop
     @output_file.close unless @output_file.closed?
@@ -53,6 +86,10 @@ class CodeWriter
       label = "#{prefix}$#{@label_seq}"
       @label_seq += 1
       label
+    end
+
+    def scope_label(label)
+      "#{@file_basename}$#{label}"
     end
 
     def emit(asm)
@@ -150,7 +187,6 @@ class CodeWriter
         D=D+A
         @R13
         M=D
-
         @SP
         AM=M-1
         D=M
