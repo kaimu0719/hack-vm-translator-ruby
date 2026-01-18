@@ -51,6 +51,10 @@ class Parser
       C_GOTO
     elsif @current_command.start_with?("if-goto")
       C_IF_GOTO
+    elsif @current_command.start_with?("function")
+      C_FUNCTION
+    elsif @current_command.start_with?("return")
+      C_RETURN
     end
   end
 
@@ -58,14 +62,14 @@ class Parser
     case command_type
     when C_ARITHMETIC
       @parts[0]
-    when C_PUSH, C_POP, C_LABEL, C_GOTO, C_IF_GOTO
+    when C_PUSH, C_POP, C_LABEL, C_GOTO, C_IF_GOTO, C_FUNCTION
       @parts[1]
     end
   end
 
   def arg2
     case command_type
-    when C_PUSH, C_POP
+    when C_PUSH, C_POP, C_FUNCTION
       @parts[2]
     end
   end

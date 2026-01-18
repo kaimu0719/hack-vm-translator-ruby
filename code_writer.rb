@@ -75,6 +75,87 @@ class CodeWriter
     ASM
   end
 
+  # function コマンド
+  # function <name> <nLocals>
+  # 1) (<name>)というラベルを出力
+  # 2) local を nLocals 個ぶん 0 で初期化(push constant 0 を n 回)
+  def write_function(name, n_locals)
+    num = n_locals.to_i
+
+    emit <<~ASM
+      (#{name})
+    ASM
+
+    num.times do
+      emit write_constant index: 0
+    end
+  end
+
+  # return コマンド
+  # FRAME = LCL
+  # RET   = *(FRAME - 5)
+  # *ARG  = pop()
+  # SP    = ARG + 1
+  # THAT  = *(FRAME - 1)
+  # THIS  = *(FRAME - 2)
+  # ARG   = *(FRAME - 3)
+  # LCL   = *(FRAME - 4)
+  # goto RET
+  def write_return
+    emit <<~ASM
+      @LCL
+      D=M
+      @R13
+      M=D
+
+      @5
+      A=D-A
+      D=M
+      @R14
+      M=D
+
+      @SP
+      AM=M-1
+      D=M
+      @ARG
+      A=M
+      M=D
+
+      @ARG
+      D=M+1
+      @SP
+      M=D
+
+      @R13
+      AM=M-1
+      D=M
+      @THAT
+      M=D
+
+      @R13
+      AM=M-1
+      D=M
+      @THIS
+      M=D
+
+      @R13
+      AM=M-1
+      D=M
+      @ARG
+      M=D
+
+      @R13
+      AM=M-1
+      D=M
+      @LCL
+      M=D
+
+      @R14
+      A=M
+      0;JMP
+    ASM
+  end
+
   def close
     emit infinite_loop
     @output_file.close unless @output_file.closed?
